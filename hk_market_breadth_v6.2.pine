@@ -1,0 +1,228 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tvstudy202211
+
+//@version=6
+indicator("HK Market Breadth: 2800.HK 多週期與板塊寬度 [v6.2 警報增強版]", overlay = false, precision = 1)
+
+// -------------------------------------------------------------------------
+// 1. 參數設定
+// -------------------------------------------------------------------------
+var string G_MODE = "1. 顯示模式設定"
+string MODE_A = "模式 A：同時顯示 20 / 50 / 200 SMA (整體寬度)"
+string MODE_B = "模式 B：顯示 4 大分類板塊 (單一指定週期)"
+
+string dispMode  = input.string(MODE_A, "曲線顯示模式", options = [MODE_A, MODE_B], group = G_MODE)
+string selPeriod = input.string("> 50 SMA (中線)", "模式 B 專用：選擇板塊 SMA 週期", options = ["> 20 SMA (短線)", "> 50 SMA (中線)", "> 200 SMA (長線)"], group = G_MODE)
+
+var string G_HIST = "2. 歷史讀取與對比"
+int histBars = input.int(5, "Dashboard 回溯對比 K 棒數 (Bars Ago)", minval = 1, maxval = 250, group = G_HIST, tooltip = "查看幾根 K 棒前的寬度數值及變化幅度 (例如 5 代表 5 天前)")
+
+var string G_LEN = "3. 均線週期參數"
+int len1 = input.int(20, "短線 SMA 週期", minval = 1, group = G_LEN)
+int len2 = input.int(50, "中線 SMA 週期", minval = 1, group = G_LEN)
+int len3 = input.int(200, "長線 SMA 週期", minval = 1, group = G_LEN)
+
+var string G_ALERT = "4. 警報閾值設定"
+float th_ob = input.float(80.0, "超買警戒水位 (%)", minval = 50.0, maxval = 100.0, group = G_ALERT)
+float th_os = input.float(20.0, "超賣警戒水位 (%)", minval = 0.0, maxval = 50.0, group = G_ALERT)
+
+// -------------------------------------------------------------------------
+// 2. 數據抓取：Tuple 一次性回傳 3 個週期
+// -------------------------------------------------------------------------
+f_eval3() =>
+    int idx = barstate.isrealtime ? 1 : 0
+    float c = close[idx]
+    float m1 = ta.sma(close, len1)[idx]
+    float m2 = ta.sma(close, len2)[idx]
+    float m3 = ta.sma(close, len3)[idx]
+    [c > m1 ? 1 : 0, c > m2 ? 1 : 0, c > m3 ? 1 : 0]
+
+f_get3(string sym) =>
+    request.security(sym, "D", f_eval3(), ignore_invalid_symbol = true)
+
+// --- A. 科技與新經濟 (10 隻) ---
+[t1_1, t1_2, t1_3]   = f_get3("HKEX:700")
+[t2_1, t2_2, t2_3]   = f_get3("HKEX:9988")
+[t3_1, t3_2, t3_3]   = f_get3("HKEX:3690")
+[t4_1, t4_2, t4_3]   = f_get3("HKEX:1810")
+[t5_1, t5_2, t5_3]   = f_get3("HKEX:9618")
+[t6_1, t6_2, t6_3]   = f_get3("HKEX:9999")
+[t7_1, t7_2, t7_3]   = f_get3("HKEX:9888")
+[t8_1, t8_2, t8_3]   = f_get3("HKEX:1024")
+[t9_1, t9_2, t9_3]   = f_get3("HKEX:981")
+[t10_1, t10_2, t10_3] = f_get3("HKEX:992")
+
+// --- B. 金融與地產 (14 隻) ---
+[f1_1, f1_2, f1_3]   = f_get3("HKEX:5")
+[f2_1, f2_2, f2_3]   = f_get3("HKEX:1299")
+[f3_1, f3_2, f3_3]   = f_get3("HKEX:939")
+[f4_1, f4_2, f4_3]   = f_get3("HKEX:388")
+[f5_1, f5_2, f5_3]   = f_get3("HKEX:1398")
+[f6_1, f6_2, f6_3]   = f_get3("HKEX:3988")
+[f7_1, f7_2, f7_3]   = f_get3("HKEX:2318")
+[f8_1, f8_2, f8_3]   = f_get3("HKEX:3968")
+[f9_1, f9_2, f9_3]   = f_get3("HKEX:2628")
+[f10_1, f10_2, f10_3] = f_get3("HKEX:2388")
+[f11_1, f11_2, f11_3] = f_get3("HKEX:16")
+[f12_1, f12_2, f12_3] = f_get3("HKEX:1113")
+[f13_1, f13_2, f13_3] = f_get3("HKEX:823")
+[f14_1, f14_2, f14_3] = f_get3("HKEX:688")
+
+// --- C. 消費、公用與能源電訊 (12 隻) ---
+[c1_1, c1_2, c1_3]   = f_get3("HKEX:1211")
+[c2_1, c2_2, c2_3]   = f_get3("HKEX:941")
+[c3_1, c3_2, c3_3]   = f_get3("HKEX:883")
+[c4_1, c4_2, c4_3]   = f_get3("HKEX:857")
+[c5_1, c5_2, c5_3]   = f_get3("HKEX:1")
+[c6_1, c6_2, c6_3]   = f_get3("HKEX:2")
+[c7_1, c7_2, c7_3]   = f_get3("HKEX:669")
+[c8_1, c8_2, c8_3]   = f_get3("HKEX:2020")
+[c9_1, c9_2, c9_3]   = f_get3("HKEX:9633")
+[c10_1, c10_2, c10_3] = f_get3("HKEX:27")
+[c11_1, c11_2, c11_3] = f_get3("HKEX:1093")
+[c12_1, c12_2, c12_3] = f_get3("HKEX:175")
+
+// -------------------------------------------------------------------------
+// 3. 統計三大週期與板塊百分比 (%)
+// -------------------------------------------------------------------------
+int s_tech_1 = nz(t1_1)+nz(t2_1)+nz(t3_1)+nz(t4_1)+nz(t5_1)+nz(t6_1)+nz(t7_1)+nz(t8_1)+nz(t9_1)+nz(t10_1)
+int s_fin_1  = nz(f1_1)+nz(f2_1)+nz(f3_1)+nz(f4_1)+nz(f5_1)+nz(f6_1)+nz(f7_1)+nz(f8_1)+nz(f9_1)+nz(f10_1)+nz(f11_1)+nz(f12_1)+nz(f13_1)+nz(f14_1)
+int s_cons_1 = nz(c1_1)+nz(c2_1)+nz(c3_1)+nz(c4_1)+nz(c5_1)+nz(c6_1)+nz(c7_1)+nz(c8_1)+nz(c9_1)+nz(c10_1)+nz(c11_1)+nz(c12_1)
+
+float v_hsi_1  = (s_tech_1 + s_fin_1 + s_cons_1) / 36.0 * 100.0
+float v_tech_1 = s_tech_1 / 10.0 * 100.0
+float v_fin_1  = s_fin_1  / 14.0 * 100.0
+float v_cons_1 = s_cons_1 / 12.0 * 100.0
+
+int s_tech_2 = nz(t1_2)+nz(t2_2)+nz(t3_2)+nz(t4_2)+nz(t5_2)+nz(t6_2)+nz(t7_2)+nz(t8_2)+nz(t9_2)+nz(t10_2)
+int s_fin_2  = nz(f1_2)+nz(f2_2)+nz(f3_2)+nz(f4_2)+nz(f5_2)+nz(f6_2)+nz(f7_2)+nz(f8_2)+nz(f9_2)+nz(f10_2)+nz(f11_2)+nz(f12_2)+nz(f13_2)+nz(f14_2)
+int s_cons_2 = nz(c1_2)+nz(c2_2)+nz(c3_2)+nz(c4_2)+nz(c5_2)+nz(c6_2)+nz(c7_2)+nz(c8_2)+nz(c9_2)+nz(c10_2)+nz(c11_2)+nz(c12_2)
+
+float v_hsi_2  = (s_tech_2 + s_fin_2 + s_cons_2) / 36.0 * 100.0
+float v_tech_2 = s_tech_2 / 10.0 * 100.0
+float v_fin_2  = s_fin_2  / 14.0 * 100.0
+float v_cons_2 = s_cons_2 / 12.0 * 100.0
+
+int s_tech_3 = nz(t1_3)+nz(t2_3)+nz(t3_3)+nz(t4_3)+nz(t5_3)+nz(t6_3)+nz(t7_3)+nz(t8_3)+nz(t9_3)+nz(t10_3)
+int s_fin_3  = nz(f1_3)+nz(f2_3)+nz(f3_3)+nz(f4_3)+nz(f5_3)+nz(f6_3)+nz(f7_3)+nz(f8_3)+nz(f9_3)+nz(f10_3)+nz(f11_3)+nz(f12_3)+nz(f13_3)+nz(f14_3)
+int s_cons_3 = nz(c1_3)+nz(c2_3)+nz(c3_3)+nz(c4_3)+nz(c5_3)+nz(c6_3)+nz(c7_3)+nz(c8_3)+nz(c9_3)+nz(c10_3)+nz(c11_3)+nz(c12_3)
+
+float v_hsi_3  = (s_tech_3 + s_fin_3 + s_cons_3) / 36.0 * 100.0
+float v_tech_3 = s_tech_3 / 10.0 * 100.0
+float v_fin_3  = s_fin_3  / 14.0 * 100.0
+float v_cons_3 = s_cons_3 / 12.0 * 100.0
+
+// -------------------------------------------------------------------------
+// 4. 水平基準線
+// -------------------------------------------------------------------------
+hline(80, "極度超買 (80%)", color = #d32f2f, linestyle = hline.style_dashed)
+hline(50, "多空分水嶺 (50%)", color = #546e7a, linestyle = hline.style_solid, linewidth = 2)
+hline(20, "極度超賣 (20%)", color = #388e3c, linestyle = hline.style_dashed)
+
+// -------------------------------------------------------------------------
+// 5. 繪製曲線與歷史讀數
+// -------------------------------------------------------------------------
+bool isModeA = dispMode == MODE_A
+
+float b_hsi  = selPeriod == "> 20 SMA (短線)" ? v_hsi_1  : selPeriod == "> 50 SMA (中線)" ? v_hsi_2  : v_hsi_3
+float b_tech = selPeriod == "> 20 SMA (短線)" ? v_tech_1 : selPeriod == "> 50 SMA (中線)" ? v_tech_2 : v_tech_3
+float b_fin  = selPeriod == "> 20 SMA (短線)" ? v_fin_1  : selPeriod == "> 50 SMA (中線)" ? v_fin_2  : v_fin_3
+float b_cons = selPeriod == "> 20 SMA (短線)" ? v_cons_1 : selPeriod == "> 50 SMA (中線)" ? v_cons_2 : v_cons_3
+
+plot(isModeA ? v_hsi_1 : na, "A1. 2800 短線寬度 (>20 SMA)", color = #00acc1, linewidth = 2)
+plot(isModeA ? v_hsi_2 : na, "A2. 2800 中線寬度 (>50 SMA)", color = #7b1fa2, linewidth = 2)
+plot(isModeA ? v_hsi_3 : na, "A3. 2800 長線寬度 (>200 SMA)", color = #ef6c00, linewidth = 2)
+
+plot(not isModeA ? b_hsi  : na, "B1. 2800 恒指整體 (36大)", color = #7b1fa2, linewidth = 2)
+plot(not isModeA ? b_tech : na, "B2. 恒生科技核心 (Tech)", color = #0097a7, linewidth = 2)
+plot(not isModeA ? b_fin  : na, "B3. 金融與地產 (Fin)", color = #1976d2, linewidth = 2)
+plot(not isModeA ? b_cons : na, "B4. 消費與公用 (Cons)", color = #f57c00, linewidth = 2)
+
+// 數據視窗專用讀數
+plot(v_hsi_1,  "歷史讀數: 整體 >20",  display = display.data_window)
+plot(v_hsi_2,  "歷史讀數: 整體 >50",  display = display.data_window)
+plot(v_hsi_3,  "歷史讀數: 整體 >200", display = display.data_window)
+plot(v_tech_2, "歷史讀數: 科技 >50",  display = display.data_window)
+plot(v_fin_2,  "歷史讀數: 金融 >50",  display = display.data_window)
+plot(v_cons_2, "歷史讀數: 消費 >50",  display = display.data_window)
+
+// -------------------------------------------------------------------------
+// 6. 全景矩陣 Dashboard 卡片
+// -------------------------------------------------------------------------
+var color c_cardBg  = color.new(#f8f9fa, 5)
+var color c_border  = #cfd8dc
+var color c_hdrBg   = #eceff1
+var color c_txtMain = #212121
+var color c_bullBg  = #c8e6c9
+var color c_bullTxt = #1b5e20
+var color c_bearBg  = #ffcdd2
+var color c_bearTxt = #b71c1c
+
+var table dash = table.new(position.top_right, 6, 5, bgcolor = c_cardBg, border_color = c_border, border_width = 1, frame_color = c_border, frame_width = 1)
+
+f_cellVal(int col, int row, float val) =>
+    bool isBull = not na(val) and val >= 50.0
+    string s = not na(val) ? str.tostring(val, "#.#") + "%" : "--"
+    color bg = isBull ? c_bullBg : c_bearBg
+    color tx = isBull ? c_bullTxt : c_bearTxt
+    table.cell(dash, col, row, s, bgcolor = bg, text_color = tx, text_size = size.small)
+
+f_cellDiff(int col, int row, float curr, float prev) =>
+    float diff = curr - prev
+    string sign = diff > 0 ? "+" : ""
+    string s = not na(diff) ? str.tostring(prev, "#.#") + " (" + sign + str.tostring(diff, "#.#") + "%)" : "--"
+    color bg = diff >= 0 ? c_bullBg : c_bearBg
+    color tx = diff >= 0 ? c_bullTxt : c_bearTxt
+    table.cell(dash, col, row, s, bgcolor = bg, text_color = tx, text_size = size.small)
+
+f_renderMatrixRow(int r, string title, color titleClr, float v1, float v2, float v3, float v2_hist) =>
+    string status = (v1 >= 50 and v2 >= 50 and v3 >= 50) ? "全面強勢" : (v1 >= 50 and v2 < 50) ? "短線反彈" : (v1 < 50 and v2 >= 50) ? "中線回調" : "弱勢調整"
+    color stBg = (v2 >= 50) ? c_bullBg : c_bearBg
+    color stTx = (v2 >= 50) ? c_bullTxt : c_bearTxt
+    table.cell(dash, 0, r, title, text_color = titleClr, text_size = size.small)
+    f_cellVal(1, r, v1)
+    f_cellVal(2, r, v2)
+    f_cellVal(3, r, v3)
+    f_cellDiff(4, r, v2, v2_hist)
+    table.cell(dash, 5, r, status, bgcolor = stBg, text_color = stTx, text_size = size.small)
+
+if barstate.islast
+    string histTitle = str.tostring(histBars) + "日前(>50)"
+    table.cell(dash, 0, 0, "2800.HK 寬度矩陣", bgcolor = c_hdrBg, text_color = c_txtMain, text_size = size.small)
+    table.cell(dash, 1, 0, ">" + str.tostring(len1) + " SMA", bgcolor = c_hdrBg, text_color = #00acc1, text_size = size.small)
+    table.cell(dash, 2, 0, ">" + str.tostring(len2) + " SMA", bgcolor = c_hdrBg, text_color = #7b1fa2, text_size = size.small)
+    table.cell(dash, 3, 0, ">" + str.tostring(len3) + " SMA", bgcolor = c_hdrBg, text_color = #ef6c00, text_size = size.small)
+    table.cell(dash, 4, 0, histTitle, bgcolor = c_hdrBg, text_color = #455a64, text_size = size.small)
+    table.cell(dash, 5, 0, "結構狀態", bgcolor = c_hdrBg, text_color = c_txtMain, text_size = size.small)
+
+    f_renderMatrixRow(1, "● 1. 2800 恒指整體", #7b1fa2, v_hsi_1, v_hsi_2, v_hsi_3, v_hsi_2[histBars])
+    f_renderMatrixRow(2, "● 2. 恒生科技核心", #0097a7, v_tech_1, v_tech_2, v_tech_3, v_tech_2[histBars])
+    f_renderMatrixRow(3, "● 3. 金融與地產", #1976d2, v_fin_1, v_fin_2, v_fin_3, v_fin_2[histBars])
+    f_renderMatrixRow(4, "● 4. 消費與公用", #f57c00, v_cons_1, v_cons_2, v_cons_3, v_cons_2[histBars])
+
+// -------------------------------------------------------------------------
+// 7. 警報條件 (Alert Conditions)
+// -------------------------------------------------------------------------
+// (1) 黃金交叉：短線寬度 (>20 SMA) 向上穿越 中線寬度 (>50 SMA)
+bool alert_golden_cross = ta.crossover(v_hsi_1, v_hsi_2)
+alertcondition(alert_golden_cross, title = "2800 寬度黃金交叉 (短穿中)", message = "【2800.HK 寬度】短線寬度向上金叉中線寬度，市場動能轉強！")
+
+// (2) 死亡交叉：短線寬度 (>20 SMA) 向下跌破 中線寬度 (>50 SMA)
+bool alert_death_cross = ta.crossunder(v_hsi_1, v_hsi_2)
+alertcondition(alert_death_cross, title = "2800 寬度死亡交叉 (短破中)", message = "【2800.HK 寬度】短線寬度跌破中線寬度，短線動能轉弱。")
+
+// (3) 超賣反彈訊號：短線寬度自超賣區向上回升 (穿越 20% 水平)
+bool alert_os_bounce = ta.crossover(v_hsi_1, th_os)
+alertcondition(alert_os_bounce, title = "2800 短線超賣反彈", message = "【2800.HK 寬度】短線寬度向上突破超賣線 (20%)，出現潛在反彈訊號！")
+
+// (4) 超買風險警示：短線寬度自超買區向下跌破 (跌破 80% 水平)
+bool alert_ob_cool = ta.crossunder(v_hsi_1, th_ob)
+alertcondition(alert_ob_cool, title = "2800 短線超買回落", message = "【2800.HK 寬度】短線寬度跌破超買線 (80%)，高檔出現獲利回吐跡象。")
+
+// (5) 多空結構翻多：中線寬度突破 50% 核心分水嶺
+bool alert_mid_bull = ta.crossover(v_hsi_2, 50.0)
+alertcondition(alert_mid_bull, title = "2800 中線突破多空分水嶺 (50%)", message = "【2800.HK 寬度】中線寬度突破 50%，超過半數成分股重回 50 SMA 上方，確立中期反轉！")
+
+// (6) 多空結構轉弱：中線寬度跌破 50% 核心分水嶺
+bool alert_mid_bear = ta.crossunder(v_hsi_2, 50.0)
+alertcondition(alert_mid_bear, title = "2800 中線跌破多空分水嶺 (50%)", message = "【2800.HK 寬度】中線寬度跌破 50%，少於半數成分股維持在 50 SMA 上方，進入弱勢防守。")

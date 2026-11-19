@@ -30,7 +30,6 @@
       line-height: 1.5;
       min-height: 100vh;
     }
-    /* Top Navbar */
     .topbar {
       display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
       padding: 1rem 1.5rem;
@@ -56,10 +55,8 @@
     .btn-primary:hover { background: #7dd3fc; }
     .btn.active { background: var(--purple); border-color: var(--purple); color: #fff; }
 
-    /* Main Layout */
     .main { max-width: 1280px; margin: 0 auto; padding: 1.5rem; display: grid; gap: 1.25rem; }
 
-    /* KPI Row */
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; }
     .kpi {
       background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
@@ -69,7 +66,6 @@
     .kpi-val { font-size: 1.8rem; font-weight: 700; }
     .kpi-sub { font-size: 0.8rem; margin-top: 0.25rem; color: var(--muted); }
 
-    /* Dashboard Panels */
     .grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.25rem; }
     @media (max-width: 960px) { .grid-2 { grid-template-columns: 1fr; } }
 
@@ -83,7 +79,6 @@
     .panel-title { font-size: 1rem; font-weight: 700; }
     .chart-wrap { position: relative; height: 300px; width: 100%; }
 
-    /* Matrix Table */
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     th, td { padding: 0.65rem 0.6rem; text-align: center; border-bottom: 1px solid var(--border); }
@@ -95,7 +90,6 @@
       display: inline-block; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.78rem; font-weight: 600;
     }
 
-    /* Alerts Grid */
     .alerts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.75rem; }
     .alert-item {
       background: var(--card); border: 1px solid var(--border); border-radius: 8px;
@@ -107,7 +101,6 @@
     .dot-bull { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
     .dot-bear { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
 
-    /* Code Drawer */
     details.code-panel {
       background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
     }
@@ -121,7 +114,6 @@
       font-size: 0.82rem; color: #e2e8f0; border-top: 1px solid var(--border);
     }
 
-    /* Edit Modal */
     .modal-backdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none;
       align-items: center; justify-content: center; z-index: 50; padding: 1rem;
@@ -144,7 +136,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>2800.HK 市場寬度 Dashboard</h1>
-      <span class="pill">v6.2 • 36 大核心成分股</span>
+      <span class="pill">v6.2 • 載入中...</span>
     </div>
     <div class="actions">
       <button class="btn" id="editBtn">✏️ 更新讀數</button>
@@ -154,7 +146,6 @@
   </header>
 
   <main class="main">
-    <!-- KPI Row -->
     <section class="kpi-grid">
       <div class="kpi">
         <div class="kpi-label">短線寬度 (>20 SMA)</div>
@@ -178,7 +169,6 @@
       </div>
     </section>
 
-    <!-- Chart + Matrix -->
     <section class="grid-2">
       <div class="panel">
         <div class="panel-header">
@@ -216,7 +206,6 @@
       </div>
     </section>
 
-    <!-- Alerts Status -->
     <section class="panel">
       <div class="panel-header">
         <div class="panel-title">🔔 6 大警報條件即時狀態</div>
@@ -225,7 +214,6 @@
       <div class="alerts-grid" id="alertsGrid"></div>
     </section>
 
-    <!-- Collapsible Pine Script Source -->
     <details class="code-panel">
       <summary>
         <span>📄 檢視 Pine Script v6 原始碼 (hk_market_breadth_v6.2.pine)</span>
@@ -235,7 +223,6 @@
     </details>
   </main>
 
-  <!-- Edit Modal -->
   <div class="modal-backdrop" id="editModal">
     <div class="modal">
       <h3>✏️ 手動輸入最新 TradingView 寬度讀數 (%)</h3>
@@ -250,7 +237,8 @@
     </div>
   </div>
 
-      let sectors = [
+  <script>
+    let sectors = [
       { key: "hsi",  name: "● 1. 恒指整體", color: "#a855f7", v1: 0, v2: 0, v3: 0, prev50: 0 },
       { key: "tech", name: "● 2. 科技核心", color: "#00acc1", v1: 0, v2: 0, v3: 0, prev50: 0 },
       { key: "fin",  name: "● 3. 金融地產", color: "#3b82f6", v1: 0, v2: 0, v3: 0, prev50: 0 },
@@ -371,7 +359,6 @@
       renderChart();
     });
 
-    // 手動微調 Modal（保留）
     const modal = document.getElementById("editModal");
     document.getElementById("editBtn").addEventListener("click", () => {
       document.getElementById("editFields").innerHTML = sectors.map((s, i) => `
@@ -396,7 +383,6 @@
       renderDashboard();
     });
 
-    // 自動讀取 data.json 真實數據
     fetch("data.json?t=" + Date.now())
       .then(res => res.ok ? res.json() : Promise.reject())
       .then(data => {
@@ -410,7 +396,6 @@
         document.querySelector(".pill").textContent = "等待首次自動抓取 data.json...";
       });
 
-    // 讀取並一鍵複製 .pine 檔案
     let rawCode = "";
     fetch("hk_market_breadth_v6.2.pine")
       .then(res => res.ok ? res.text() : Promise.reject())
@@ -432,7 +417,6 @@
       btn.textContent = "✅ 已複製！";
       setTimeout(() => btn.textContent = orig, 2000);
     });
-  </script>
   </script>
 </body>
 </html>

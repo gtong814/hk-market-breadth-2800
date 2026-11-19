@@ -250,16 +250,14 @@
     </div>
   </div>
 
-  <script>
-    // 預設示範數據（可點擊右上角「更新讀數」即時修改並儲存在瀏覽器）
-    const defaultData = [
-      { key: "hsi",  name: "● 1. 恒指整體", color: "#a855f7", v1: 63.9, v2: 58.3, v3: 66.7, prev50: 50.0 },
-      { key: "tech", name: "● 2. 科技核心", color: "#00acc1", v1: 70.0, v2: 60.0, v3: 70.0, prev50: 50.0 },
-      { key: "fin",  name: "● 3. 金融地產", color: "#3b82f6", v1: 64.3, v2: 64.3, v3: 71.4, prev50: 57.1 },
-      { key: "cons", name: "● 4. 消費公用", color: "#f57c00", v1: 58.3, v2: 50.0, v3: 58.3, prev50: 41.7 }
+      let sectors = [
+      { key: "hsi",  name: "● 1. 恒指整體", color: "#a855f7", v1: 0, v2: 0, v3: 0, prev50: 0 },
+      { key: "tech", name: "● 2. 科技核心", color: "#00acc1", v1: 0, v2: 0, v3: 0, prev50: 0 },
+      { key: "fin",  name: "● 3. 金融地產", color: "#3b82f6", v1: 0, v2: 0, v3: 0, prev50: 0 },
+      { key: "cons", name: "● 4. 消費公用", color: "#f57c00", v1: 0, v2: 0, v3: 0, prev50: 0 }
     ];
-
-    let sectors = JSON.parse(localStorage.getItem("hk_breadth_data") || "null") || defaultData;
+    let chartDates = [];
+    let historyData = null;
     let currentMode = "A";
     let chartInstance = null;
 
@@ -285,9 +283,7 @@
       const sign = diff > 0 ? "+" : "";
       document.getElementById("kpiDiff").textContent = `較 5 日前 (>50): ${hsi.prev50.toFixed(1)}% (${sign}${diff.toFixed(1)}%)`;
 
-      // Render Matrix Table
-      const tbody = document.getElementById("matrixBody");
-      tbody.innerHTML = sectors.map(s => {
+      document.getElementById("matrixBody").innerHTML = sectors.map(s => {
         const d = s.v2 - s.prev50;
         const sg = d > 0 ? "+" : "";
         const status = getStatus(s.v1, s.v2, s.v3);
@@ -303,7 +299,6 @@
         `;
       }).join("");
 
-      // Render Alerts
       const alerts = [
         { label: "短線 > 中線 (多頭動能)", active: hsi.v1 > hsi.v2, type: "bull" },
         { label: "短線 < 中線 (動能轉弱)", active: hsi.v1 < hsi.v2, type: "bear" },
@@ -325,31 +320,31 @@
     }
 
     function renderChart() {
+      if (!historyData) return;
       const ctx = document.getElementById("breadthChart").getContext("2d");
-      const labels = ["T-5", "T-4", "T-3", "T-2", "T-1", "今日"];
-      const hsi = sectors[0];
+      const len = chartDates.length;
 
       const datasets = currentMode === "A" ? [
-        { label: ">20 SMA (短線)", data: [44.4, 47.2, 52.8, 55.6, 61.1, hsi.v1], borderColor: "#00acc1", tension: 0.3, borderWidth: 2 },
-        { label: ">50 SMA (中線)", data: [hsi.prev50, 50.0, 52.8, 52.8, 55.6, hsi.v2], borderColor: "#a855f7", tension: 0.3, borderWidth: 2.5 },
-        { label: ">200 SMA (長線)", data: [61.1, 61.1, 63.9, 63.9, 66.7, hsi.v3], borderColor: "#f57c00", tension: 0.3, borderWidth: 2 }
-      ] : sectors.map(s => ({
-        label: s.name.replace("● ", ""),
-        data: [s.prev50, +(s.prev50 + (s.v2 - s.prev50)*0.2).toFixed(1), +(s.prev50 + (s.v2 - s.prev50)*0.4).toFixed(1), +(s.prev50 + (s.v2 - s.prev50)*0.7).toFixed(1), +(s.prev50 + (s.v2 - s.prev50)*0.85).toFixed(1), s.v2],
-        borderColor: s.color, tension: 0.3, borderWidth: 2
-      }));
+        { label: ">20 SMA (短線)", data: historyData.hsi_20,  borderColor: "#00acc1", tension: 0.25, borderWidth: 2 },
+        { label: ">50 SMA (中線)", data: historyData.hsi_50,  borderColor: "#a855f7", tension: 0.25, borderWidth: 2.5 },
+        { label: ">200 SMA (長線)", data: historyData.hsi_200, borderColor: "#f57c00", tension: 0.25, borderWidth: 2 }
+      ] : [
+        { label: "1. 恒指整體", data: historyData.hsi_50,  borderColor: "#a855f7", tension: 0.25, borderWidth: 2.5 },
+        { label: "2. 科技核心", data: historyData.tech_50, borderColor: "#00acc1", tension: 0.25, borderWidth: 2 },
+        { label: "3. 金融地產", data: historyData.fin_50,  borderColor: "#3b82f6", tension: 0.25, borderWidth: 2 },
+        { label: "4. 消費公用", data: historyData.cons_50, borderColor: "#f57c00", tension: 0.25, borderWidth: 2 }
+      ];
 
-      // 加入 80 / 50 / 20 基準線
       datasets.push(
-        { label: "80% 超買", data: Array(6).fill(80), borderColor: "rgba(239,68,68,0.45)", borderDash: [5,5], pointRadius: 0, borderWidth: 1 },
-        { label: "50% 分水嶺", data: Array(6).fill(50), borderColor: "rgba(148,163,184,0.6)", pointRadius: 0, borderWidth: 1.5 },
-        { label: "20% 超賣", data: Array(6).fill(20), borderColor: "rgba(34,197,94,0.45)", borderDash: [5,5], pointRadius: 0, borderWidth: 1 }
+        { label: "80% 超買", data: Array(len).fill(80), borderColor: "rgba(239,68,68,0.45)", borderDash: [5,5], pointRadius: 0, borderWidth: 1 },
+        { label: "50% 分水嶺", data: Array(len).fill(50), borderColor: "rgba(148,163,184,0.6)", pointRadius: 0, borderWidth: 1.5 },
+        { label: "20% 超賣", data: Array(len).fill(20), borderColor: "rgba(34,197,94,0.45)", borderDash: [5,5], pointRadius: 0, borderWidth: 1 }
       );
 
       if (chartInstance) chartInstance.destroy();
       chartInstance = new Chart(ctx, {
         type: "line",
-        data: { labels, datasets },
+        data: { labels: chartDates, datasets },
         options: {
           responsive: true, maintainAspectRatio: false,
           scales: {
@@ -363,7 +358,6 @@
       });
     }
 
-    // 模式切換
     document.getElementById("modeABtn").addEventListener("click", (e) => {
       currentMode = "A";
       e.target.classList.add("active");
@@ -377,7 +371,7 @@
       renderChart();
     });
 
-    // 手動更新數值 Modal
+    // 手動微調 Modal（保留）
     const modal = document.getElementById("editModal");
     document.getElementById("editBtn").addEventListener("click", () => {
       document.getElementById("editFields").innerHTML = sectors.map((s, i) => `
@@ -398,10 +392,23 @@
         v2: parseFloat(document.getElementById(`in_${i}_2`).value) || 0,
         v3: parseFloat(document.getElementById(`in_${i}_3`).value) || 0
       }));
-      localStorage.setItem("hk_breadth_data", JSON.stringify(sectors));
       modal.classList.remove("open");
       renderDashboard();
     });
+
+    // 自動讀取 data.json 真實數據
+    fetch("data.json?t=" + Date.now())
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(data => {
+        sectors = data.sectors;
+        chartDates = data.dates;
+        historyData = data.history;
+        document.querySelector(".pill").textContent = `v6.2 • 資料日期 ${data.trade_date}`;
+        renderDashboard();
+      })
+      .catch(() => {
+        document.querySelector(".pill").textContent = "等待首次自動抓取 data.json...";
+      });
 
     // 讀取並一鍵複製 .pine 檔案
     let rawCode = "";
@@ -425,8 +432,7 @@
       btn.textContent = "✅ 已複製！";
       setTimeout(() => btn.textContent = orig, 2000);
     });
-
-    renderDashboard();
+  </script>
   </script>
 </body>
 </html>

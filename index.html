@@ -3,160 +3,430 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HK Market Breadth: 2800.HK 市場寬度指標 v6.2</title>
+  <title>2800.HK Market Breadth Dashboard v6.2</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
+      --bg: #0b1120;
+      --panel: #111827;
       --card: #1e293b;
       --border: #334155;
       --text: #f8fafc;
       --muted: #94a3b8;
-      --accent: #38bdf8;
+      --cyan: #00acc1;
       --purple: #a855f7;
-      --green: #22c55e;
-      --red: #ef4444;
+      --orange: #f57c00;
+      --blue: #3b82f6;
+      --bull-bg: rgba(34, 197, 94, 0.16);
+      --bull-txt: #4ade80;
+      --bear-bg: rgba(239, 68, 68, 0.16);
+      --bear-txt: #f87171;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.6;
-      padding: 2rem 1rem;
+      line-height: 1.5;
+      min-height: 100vh;
     }
-    .container { max-width: 960px; margin: 0 auto; }
-    header { text-align: center; margin-bottom: 3rem; }
-    .badge {
-      display: inline-block;
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--accent);
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 0.75rem;
+    /* Top Navbar */
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+      padding: 1rem 1.5rem;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
     }
-    h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
-    header p { color: var(--muted); max-width: 640px; margin: 0 auto 1.5rem; }
-    .btn-group { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    .brand { display: flex; align-items: center; gap: 0.75rem; }
+    .brand h1 { font-size: 1.15rem; font-weight: 700; }
+    .pill {
+      font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 999px;
+      background: rgba(168, 85, 247, 0.2); color: #d8b4fe; font-weight: 600;
+    }
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .btn {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      padding: 0.7rem 1.4rem; border-radius: 8px; font-weight: 600;
-      text-decoration: none; cursor: pointer; border: none; font-size: 0.95rem;
-      transition: opacity 0.2s;
+      padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text);
+      text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
+      transition: background 0.15s;
     }
-    .btn:hover { opacity: 0.9; }
-    .btn-primary { background: var(--accent); color: #0f172a; }
-    .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem; }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
+    .btn:hover { background: #293548; }
+    .btn-primary { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+    .btn-primary:hover { background: #7dd3fc; }
+    .btn.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+
+    /* Main Layout */
+    .main { max-width: 1280px; margin: 0 auto; padding: 1.5rem; display: grid; gap: 1.25rem; }
+
+    /* KPI Row */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; }
+    .kpi {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem 1.25rem;
     }
-    .card h2 { font-size: 1.15rem; margin-bottom: 0.75rem; color: var(--accent); }
-    .card ul { padding-left: 1.2rem; color: var(--muted); font-size: 0.95rem; }
-    .card li { margin-bottom: 0.4rem; }
-    .code-box {
-      background: #020617;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 2.5rem;
+    .kpi-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; }
+    .kpi-val { font-size: 1.8rem; font-weight: 700; }
+    .kpi-sub { font-size: 0.8rem; margin-top: 0.25rem; color: var(--muted); }
+
+    /* Dashboard Panels */
+    .grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.25rem; }
+    @media (max-width: 960px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;
     }
-    .code-header {
+    .panel-header {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .panel-title { font-size: 1rem; font-weight: 700; }
+    .chart-wrap { position: relative; height: 300px; width: 100%; }
+
+    /* Matrix Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { padding: 0.65rem 0.6rem; text-align: center; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; background: rgba(30, 41, 59, 0.5); }
+    td:first-child, th:first-child { text-align: left; }
+    .cell-bull { background: var(--bull-bg); color: var(--bull-txt); font-weight: 600; border-radius: 4px; }
+    .cell-bear { background: var(--bear-bg); color: var(--bear-txt); font-weight: 600; border-radius: 4px; }
+    .badge-status {
+      display: inline-block; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.78rem; font-weight: 600;
+    }
+
+    /* Alerts Grid */
+    .alerts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.75rem; }
+    .alert-item {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.85rem;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 0.45rem; }
+    .dot-off { background: #64748b; }
+    .dot-bull { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+    .dot-bear { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+    /* Code Drawer */
+    details.code-panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    }
+    details.code-panel summary {
+      padding: 1rem 1.25rem; cursor: pointer; font-weight: 600; font-size: 0.95rem;
       display: flex; justify-content: space-between; align-items: center;
-      padding: 0.75rem 1.25rem; background: var(--card); border-bottom: 1px solid var(--border);
-      font-size: 0.9rem; color: var(--muted);
     }
     pre {
-      padding: 1.25rem; overflow-x: auto; max-height: 420px;
+      background: #020617; padding: 1.25rem; overflow-x: auto; max-height: 360px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.85rem; color: #e2e8f0;
+      font-size: 0.82rem; color: #e2e8f0; border-top: 1px solid var(--border);
     }
-    footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 3rem; }
+
+    /* Edit Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none;
+      align-items: center; justify-content: center; z-index: 50; padding: 1rem;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.5rem; width: 100%; max-width: 520px;
+    }
+    .modal h3 { margin-bottom: 1rem; font-size: 1.05rem; }
+    .form-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 0.5rem; align-items: center; margin-bottom: 1rem; font-size: 0.85rem; }
+    .form-grid input {
+      width: 100%; padding: 0.4rem; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); text-align: center;
+    }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <span class="badge">Pine Script® v6 • MPL 2.0</span>
-      <h1>HK Market Breadth: 2800.HK</h1>
-      <p>專為香港恒生指數 36 隻核心成分股打造的多週期與板塊寬度監控系統，內建全景矩陣 Dashboard 與 6 大多空警報。</p>
-      <div class="btn-group">
-        <button class="btn btn-primary" id="copyBtn">📋 一鍵複製 Pine Script</button>
-        <a class="btn btn-secondary" href="hk_market_breadth_v6.2.pine" download>⬇️ 下載 .pine 檔案</a>
-      </div>
-    </header>
+  <header class="topbar">
+    <div class="brand">
+      <h1>2800.HK 市場寬度 Dashboard</h1>
+      <span class="pill">v6.2 • 36 大核心成分股</span>
+    </div>
+    <div class="actions">
+      <button class="btn" id="editBtn">✏️ 更新讀數</button>
+      <button class="btn btn-primary" id="copyBtn">📋 複製 Pine Script</button>
+      <a class="btn" href="hk_market_breadth_v6.2.pine" download>⬇️ 下載 .pine</a>
+    </div>
+  </header>
 
-    <section class="grid">
-      <div class="card">
-        <h2>📊 雙顯示模式</h2>
-        <ul>
-          <li><strong>模式 A</strong>：同時顯示 20 / 50 / 200 SMA 整體市場寬度曲線。</li>
-          <li><strong>模式 B</strong>：單一週期拆解 4 大板塊（恒指整體、科技、金融地產、消費公用）。</li>
-        </ul>
+  <main class="main">
+    <!-- KPI Row -->
+    <section class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">短線寬度 (>20 SMA)</div>
+        <div class="kpi-val" id="kpi20" style="color: var(--cyan);">--%</div>
+        <div class="kpi-sub">36 隻成分股站上 20 日線比例</div>
       </div>
-      <div class="card">
-        <h2>🏢 36 隻核心成分股</h2>
-        <ul>
-          <li><strong>科技新經濟 (10)</strong>：700, 9988, 3690, 1810, 9618, 9999, 9888, 1024, 981, 992</li>
-          <li><strong>金融與地產 (14)</strong>：5, 1299, 939, 388, 1398, 3988, 2318, 3968, 2628, 2388, 16, 1113, 823, 688</li>
-          <li><strong>消費與公用 (12)</strong>：1211, 941, 883, 857, 1, 2, 669, 2020, 9633, 27, 1093, 175</li>
-        </ul>
+      <div class="kpi">
+        <div class="kpi-label">中線寬度 (>50 SMA)</div>
+        <div class="kpi-val" id="kpi50" style="color: var(--purple);">--%</div>
+        <div class="kpi-sub">核心多空分水嶺 (50%)</div>
       </div>
-      <div class="card">
-        <h2>🔔 6 大內建警報</h2>
-        <ul>
-          <li>短線寬度金叉 / 死叉中線寬度</li>
-          <li>短線寬度突破 20% 超賣反彈 / 跌破 80% 超買回落</li>
-          <li>中線寬度突破或跌破 50% 多空分水嶺</li>
-        </ul>
+      <div class="kpi">
+        <div class="kpi-label">長線寬度 (>200 SMA)</div>
+        <div class="kpi-val" id="kpi200" style="color: var(--orange);">--%</div>
+        <div class="kpi-sub">牛熊大週期趨勢結構</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">恒指整體結構狀態</div>
+        <div class="kpi-val" id="kpiStatus" style="font-size: 1.45rem; padding-top: 0.25rem;">--</div>
+        <div class="kpi-sub" id="kpiDiff">較 5 日前 (>50): --</div>
       </div>
     </section>
 
-    <section class="code-box">
-      <div class="code-header">
-        <span>hk_market_breadth_v6.2.pine</span>
-        <span id="copyStatus">載入中...</span>
+    <!-- Chart + Matrix -->
+    <section class="grid-2">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📈 寬度走勢監控圖</div>
+          <div class="actions">
+            <button class="btn active" id="modeABtn">模式 A：20/50/200 SMA</button>
+            <button class="btn" id="modeBBtn">模式 B：4 大板塊 (>50)</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="breadthChart"></canvas>
+        </div>
       </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🧩 全景寬度矩陣 (2800.HK)</div>
+          <span style="font-size: 0.78rem; color: var(--muted);">綠色 ≥ 50% ｜ 紅色 &lt; 50%</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>板塊</th>
+                <th style="color: var(--cyan);">>20</th>
+                <th style="color: var(--purple);">>50</th>
+                <th style="color: var(--orange);">>200</th>
+                <th>5日前(>50)</th>
+                <th>狀態</th>
+              </tr>
+            </thead>
+            <tbody id="matrixBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alerts Status -->
+    <section class="panel">
+      <div class="panel-header">
+        <div class="panel-title">🔔 6 大警報條件即時狀態</div>
+        <span style="font-size: 0.78rem; color: var(--muted);">依目前整體寬度自動判讀</span>
+      </div>
+      <div class="alerts-grid" id="alertsGrid"></div>
+    </section>
+
+    <!-- Collapsible Pine Script Source -->
+    <details class="code-panel">
+      <summary>
+        <span>📄 檢視 Pine Script v6 原始碼 (hk_market_breadth_v6.2.pine)</span>
+        <span id="copyStatus" style="font-size: 0.8rem; color: var(--muted);">載入中...</span>
+      </summary>
       <pre id="codeContent">正在讀取 Pine Script 原始碼...</pre>
-    </section>
+    </details>
+  </main>
 
-    <footer>
-      © tvstudy202211 • Hosted on GitHub Pages
-    </footer>
+  <!-- Edit Modal -->
+  <div class="modal-backdrop" id="editModal">
+    <div class="modal">
+      <h3>✏️ 手動輸入最新 TradingView 寬度讀數 (%)</h3>
+      <div class="form-grid" style="color: var(--muted); font-weight: 600;">
+        <div>板塊</div><div>>20 SMA</div><div>>50 SMA</div><div>>200 SMA</div>
+      </div>
+      <div id="editFields"></div>
+      <div class="modal-footer">
+        <button class="btn" id="cancelEdit">取消</button>
+        <button class="btn btn-primary" id="saveEdit">套用至 Dashboard</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    const codeEl = document.getElementById("codeContent");
-    const statusEl = document.getElementById("copyStatus");
-    const copyBtn = document.getElementById("copyBtn");
-    let rawCode = "";
+    // 預設示範數據（可點擊右上角「更新讀數」即時修改並儲存在瀏覽器）
+    const defaultData = [
+      { key: "hsi",  name: "● 1. 恒指整體", color: "#a855f7", v1: 63.9, v2: 58.3, v3: 66.7, prev50: 50.0 },
+      { key: "tech", name: "● 2. 科技核心", color: "#00acc1", v1: 70.0, v2: 60.0, v3: 70.0, prev50: 50.0 },
+      { key: "fin",  name: "● 3. 金融地產", color: "#3b82f6", v1: 64.3, v2: 64.3, v3: 71.4, prev50: 57.1 },
+      { key: "cons", name: "● 4. 消費公用", color: "#f57c00", v1: 58.3, v2: 50.0, v3: 58.3, prev50: 41.7 }
+    ];
 
+    let sectors = JSON.parse(localStorage.getItem("hk_breadth_data") || "null") || defaultData;
+    let currentMode = "A";
+    let chartInstance = null;
+
+    function getStatus(v1, v2, v3) {
+      if (v1 >= 50 && v2 >= 50 && v3 >= 50) return "全面強勢";
+      if (v1 >= 50 && v2 < 50) return "短線反彈";
+      if (v1 < 50 && v2 >= 50) return "中線回調";
+      return "弱勢調整";
+    }
+
+    function renderDashboard() {
+      const hsi = sectors[0];
+      document.getElementById("kpi20").textContent = hsi.v1.toFixed(1) + "%";
+      document.getElementById("kpi50").textContent = hsi.v2.toFixed(1) + "%";
+      document.getElementById("kpi200").textContent = hsi.v3.toFixed(1) + "%";
+
+      const st = getStatus(hsi.v1, hsi.v2, hsi.v3);
+      const stEl = document.getElementById("kpiStatus");
+      stEl.textContent = st;
+      stEl.style.color = hsi.v2 >= 50 ? "var(--bull-txt)" : "var(--bear-txt)";
+
+      const diff = hsi.v2 - hsi.prev50;
+      const sign = diff > 0 ? "+" : "";
+      document.getElementById("kpiDiff").textContent = `較 5 日前 (>50): ${hsi.prev50.toFixed(1)}% (${sign}${diff.toFixed(1)}%)`;
+
+      // Render Matrix Table
+      const tbody = document.getElementById("matrixBody");
+      tbody.innerHTML = sectors.map(s => {
+        const d = s.v2 - s.prev50;
+        const sg = d > 0 ? "+" : "";
+        const status = getStatus(s.v1, s.v2, s.v3);
+        return `
+          <tr>
+            <td style="color:${s.color}; font-weight:600; white-space:nowrap;">${s.name}</td>
+            <td><span class="${s.v1 >= 50 ? 'cell-bull' : 'cell-bear'}" style="padding:2px 6px;">${s.v1.toFixed(1)}%</span></td>
+            <td><span class="${s.v2 >= 50 ? 'cell-bull' : 'cell-bear'}" style="padding:2px 6px;">${s.v2.toFixed(1)}%</span></td>
+            <td><span class="${s.v3 >= 50 ? 'cell-bull' : 'cell-bear'}" style="padding:2px 6px;">${s.v3.toFixed(1)}%</span></td>
+            <td><span class="${d >= 0 ? 'cell-bull' : 'cell-bear'}" style="padding:2px 6px;">${s.prev50.toFixed(1)} (${sg}${d.toFixed(1)}%)</span></td>
+            <td><span class="badge-status ${s.v2 >= 50 ? 'cell-bull' : 'cell-bear'}">${status}</span></td>
+          </tr>
+        `;
+      }).join("");
+
+      // Render Alerts
+      const alerts = [
+        { label: "短線 > 中線 (多頭動能)", active: hsi.v1 > hsi.v2, type: "bull" },
+        { label: "短線 < 中線 (動能轉弱)", active: hsi.v1 < hsi.v2, type: "bear" },
+        { label: "超賣區警戒 (≤ 20%)", active: hsi.v1 <= 20, type: "bull" },
+        { label: "超買區警戒 (≥ 80%)", active: hsi.v1 >= 80, type: "bear" },
+        { label: "中線站穩多空分水嶺 (≥ 50%)", active: hsi.v2 >= 50, type: "bull" },
+        { label: "中線跌破多空分水嶺 (< 50%)", active: hsi.v2 < 50, type: "bear" }
+      ];
+      document.getElementById("alertsGrid").innerHTML = alerts.map(a => `
+        <div class="alert-item">
+          <span><span class="dot ${a.active ? (a.type === 'bull' ? 'dot-bull' : 'dot-bear') : 'dot-off'}"></span>${a.label}</span>
+          <strong style="color:${a.active ? (a.type === 'bull' ? 'var(--bull-txt)' : 'var(--bear-txt)') : 'var(--muted)'}">
+            ${a.active ? "觸發中" : "待機"}
+          </strong>
+        </div>
+      `).join("");
+
+      renderChart();
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById("breadthChart").getContext("2d");
+      const labels = ["T-5", "T-4", "T-3", "T-2", "T-1", "今日"];
+      const hsi = sectors[0];
+
+      const datasets = currentMode === "A" ? [
+        { label: ">20 SMA (短線)", data: [44.4, 47.2, 52.8, 55.6, 61.1, hsi.v1], borderColor: "#00acc1", tension: 0.3, borderWidth: 2 },
+        { label: ">50 SMA (中線)", data: [hsi.prev50, 50.0, 52.8, 52.8, 55.6, hsi.v2], borderColor: "#a855f7", tension: 0.3, borderWidth: 2.5 },
+        { label: ">200 SMA (長線)", data: [61.1, 61.1, 63.9, 63.9, 66.7, hsi.v3], borderColor: "#f57c00", tension: 0.3, borderWidth: 2 }
+      ] : sectors.map(s => ({
+        label: s.name.replace("● ", ""),
+        data: [s.prev50, +(s.prev50 + (s.v2 - s.prev50)*0.2).toFixed(1), +(s.prev50 + (s.v2 - s.prev50)*0.4).toFixed(1), +(s.prev50 + (s.v2 - s.prev50)*0.7).toFixed(1), +(s.prev50 + (s.v2 - s.prev50)*0.85).toFixed(1), s.v2],
+        borderColor: s.color, tension: 0.3, borderWidth: 2
+      }));
+
+      // 加入 80 / 50 / 20 基準線
+      datasets.push(
+        { label: "80% 超買", data: Array(6).fill(80), borderColor: "rgba(239,68,68,0.45)", borderDash: [5,5], pointRadius: 0, borderWidth: 1 },
+        { label: "50% 分水嶺", data: Array(6).fill(50), borderColor: "rgba(148,163,184,0.6)", pointRadius: 0, borderWidth: 1.5 },
+        { label: "20% 超賣", data: Array(6).fill(20), borderColor: "rgba(34,197,94,0.45)", borderDash: [5,5], pointRadius: 0, borderWidth: 1 }
+      );
+
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: "line",
+        data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            y: { min: 0, max: 100, grid: { color: "rgba(51,65,85,0.4)" }, ticks: { color: "#94a3b8", callback: v => v + "%" } },
+            x: { grid: { display: false }, ticks: { color: "#94a3b8" } }
+          },
+          plugins: {
+            legend: { labels: { color: "#cbd5e1", filter: item => !item.text.includes("%") } }
+          }
+        }
+      });
+    }
+
+    // 模式切換
+    document.getElementById("modeABtn").addEventListener("click", (e) => {
+      currentMode = "A";
+      e.target.classList.add("active");
+      document.getElementById("modeBBtn").classList.remove("active");
+      renderChart();
+    });
+    document.getElementById("modeBBtn").addEventListener("click", (e) => {
+      currentMode = "B";
+      e.target.classList.add("active");
+      document.getElementById("modeABtn").classList.remove("active");
+      renderChart();
+    });
+
+    // 手動更新數值 Modal
+    const modal = document.getElementById("editModal");
+    document.getElementById("editBtn").addEventListener("click", () => {
+      document.getElementById("editFields").innerHTML = sectors.map((s, i) => `
+        <div class="form-grid">
+          <div style="color:${s.color}; font-weight:600;">${s.name}</div>
+          <input type="number" step="0.1" min="0" max="100" id="in_${i}_1" value="${s.v1}" />
+          <input type="number" step="0.1" min="0" max="100" id="in_${i}_2" value="${s.v2}" />
+          <input type="number" step="0.1" min="0" max="100" id="in_${i}_3" value="${s.v3}" />
+        </div>
+      `).join("");
+      modal.classList.add("open");
+    });
+    document.getElementById("cancelEdit").addEventListener("click", () => modal.classList.remove("open"));
+    document.getElementById("saveEdit").addEventListener("click", () => {
+      sectors = sectors.map((s, i) => ({
+        ...s,
+        v1: parseFloat(document.getElementById(`in_${i}_1`).value) || 0,
+        v2: parseFloat(document.getElementById(`in_${i}_2`).value) || 0,
+        v3: parseFloat(document.getElementById(`in_${i}_3`).value) || 0
+      }));
+      localStorage.setItem("hk_breadth_data", JSON.stringify(sectors));
+      modal.classList.remove("open");
+      renderDashboard();
+    });
+
+    // 讀取並一鍵複製 .pine 檔案
+    let rawCode = "";
     fetch("hk_market_breadth_v6.2.pine")
-      .then(res => {
-        if (!res.ok) throw new Error("找不到 .pine 檔案");
-        return res.text();
-      })
+      .then(res => res.ok ? res.text() : Promise.reject())
       .then(text => {
         rawCode = text;
-        codeEl.textContent = text;
-        statusEl.textContent = "準備就緒";
+        document.getElementById("codeContent").textContent = text;
+        document.getElementById("copyStatus").textContent = "準備就緒";
       })
       .catch(() => {
-        codeEl.textContent = "請確認 hk_market_breadth_v6.2.pine 與 index.html 位於同一目錄下。";
-        statusEl.textContent = "讀取失敗";
+        document.getElementById("codeContent").textContent = "找不到 hk_market_breadth_v6.2.pine 檔案。";
+        document.getElementById("copyStatus").textContent = "讀取失敗";
       });
 
-    copyBtn.addEventListener("click", async () => {
+    document.getElementById("copyBtn").addEventListener("click", async () => {
       if (!rawCode) return;
       await navigator.clipboard.writeText(rawCode);
-      const original = copyBtn.textContent;
-      copyBtn.textContent = "✅ 已複製到剪貼簿！";
-      setTimeout(() => copyBtn.textContent = original, 2000);
+      const btn = document.getElementById("copyBtn");
+      const orig = btn.textContent;
+      btn.textContent = "✅ 已複製！";
+      setTimeout(() => btn.textContent = orig, 2000);
     });
+
+    renderDashboard();
   </script>
 </body>
 </html>

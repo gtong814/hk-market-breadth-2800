@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HK Market Breadth: 2800.HK 市場寬度指標 v6.2</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --purple: #a855f7;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 3rem; }
+    .badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+    header p { color: var(--muted); max-width: 640px; margin: 0 auto 1.5rem; }
+    .btn-group { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.7rem 1.4rem; border-radius: 8px; font-weight: 600;
+      text-decoration: none; cursor: pointer; border: none; font-size: 0.95rem;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn-primary { background: var(--accent); color: #0f172a; }
+    .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .card h2 { font-size: 1.15rem; margin-bottom: 0.75rem; color: var(--accent); }
+    .card ul { padding-left: 1.2rem; color: var(--muted); font-size: 0.95rem; }
+    .card li { margin-bottom: 0.4rem; }
+    .code-box {
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 2.5rem;
+    }
+    .code-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.75rem 1.25rem; background: var(--card); border-bottom: 1px solid var(--border);
+      font-size: 0.9rem; color: var(--muted);
+    }
+    pre {
+      padding: 1.25rem; overflow-x: auto; max-height: 420px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85rem; color: #e2e8f0;
+    }
+    footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 3rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge">Pine Script® v6 • MPL 2.0</span>
+      <h1>HK Market Breadth: 2800.HK</h1>
+      <p>專為香港恒生指數 36 隻核心成分股打造的多週期與板塊寬度監控系統，內建全景矩陣 Dashboard 與 6 大多空警報。</p>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="copyBtn">📋 一鍵複製 Pine Script</button>
+        <a class="btn btn-secondary" href="hk_market_breadth_v6.2.pine" download>⬇️ 下載 .pine 檔案</a>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h2>📊 雙顯示模式</h2>
+        <ul>
+          <li><strong>模式 A</strong>：同時顯示 20 / 50 / 200 SMA 整體市場寬度曲線。</li>
+          <li><strong>模式 B</strong>：單一週期拆解 4 大板塊（恒指整體、科技、金融地產、消費公用）。</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>🏢 36 隻核心成分股</h2>
+        <ul>
+          <li><strong>科技新經濟 (10)</strong>：700, 9988, 3690, 1810, 9618, 9999, 9888, 1024, 981, 992</li>
+          <li><strong>金融與地產 (14)</strong>：5, 1299, 939, 388, 1398, 3988, 2318, 3968, 2628, 2388, 16, 1113, 823, 688</li>
+          <li><strong>消費與公用 (12)</strong>：1211, 941, 883, 857, 1, 2, 669, 2020, 9633, 27, 1093, 175</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>🔔 6 大內建警報</h2>
+        <ul>
+          <li>短線寬度金叉 / 死叉中線寬度</li>
+          <li>短線寬度突破 20% 超賣反彈 / 跌破 80% 超買回落</li>
+          <li>中線寬度突破或跌破 50% 多空分水嶺</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="code-box">
+      <div class="code-header">
+        <span>hk_market_breadth_v6.2.pine</span>
+        <span id="copyStatus">載入中...</span>
+      </div>
+      <pre id="codeContent">正在讀取 Pine Script 原始碼...</pre>
+    </section>
+
+    <footer>
+      © tvstudy202211 • Hosted on GitHub Pages
+    </footer>
+  </div>
+
+  <script>
+    const codeEl = document.getElementById("codeContent");
+    const statusEl = document.getElementById("copyStatus");
+    const copyBtn = document.getElementById("copyBtn");
+    let rawCode = "";
+
+    fetch("hk_market_breadth_v6.2.pine")
+      .then(res => {
+        if (!res.ok) throw new Error("找不到 .pine 檔案");
+        return res.text();
+      })
+      .then(text => {
+        rawCode = text;
+        codeEl.textContent = text;
+        statusEl.textContent = "準備就緒";
+      })
+      .catch(() => {
+        codeEl.textContent = "請確認 hk_market_breadth_v6.2.pine 與 index.html 位於同一目錄下。";
+        statusEl.textContent = "讀取失敗";
+      });
+
+    copyBtn.addEventListener("click", async () => {
+      if (!rawCode) return;
+      await navigator.clipboard.writeText(rawCode);
+      const original = copyBtn.textContent;
+      copyBtn.textContent = "✅ 已複製到剪貼簿！";
+      setTimeout(() => copyBtn.textContent = original, 2000);
+    });
+  </script>
+</body>
+</html>

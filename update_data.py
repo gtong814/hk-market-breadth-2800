@@ -14,7 +14,7 @@ ALL_TICKERS = SECTORS["tech"] + SECTORS["fin"] + SECTORS["cons"]
 
 def main():
     # 下載 2 年日線復權數據（對應 TradingView ADJ）
-    df = yf.download(ALL_TICKERS, period="2y", interval="1d", auto_adjust=True, progress=False)["Close"]
+    df = yf.download(ALL_TICKERS, period="2y", interval="1d", auto_adjust=False, progress=False)["Close"]
     df = df.ffill()
 
     # 計算 20 / 50 / 200 SMA 並判斷收盤價是否站上均線 (1 或 0)

@@ -3,7 +3,7 @@ name: Update HK Market Breadth Data
 on:
   schedule:
     # 每週一至五 08:15 UTC (= 香港時間 16:15 收市後) 自動執行
-    - cron: '15 8 * * 1-5'
+    - cron: '30 8 * * 1-5'
   workflow_dispatch: # 允許手動一鍵立即執行
 
 permissions:
